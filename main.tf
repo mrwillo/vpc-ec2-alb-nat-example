@@ -1,7 +1,13 @@
 locals {
   user_data = <<EOF
 #!/bin/bash
-sudo amazon-linux-extras install -y nginx1
+sudo su
+
+yum update -y
+yum install -y httpd.x86_64
+systemctl start httpd.service
+systemctl enable httpd.service
+echo "hello world from $(hostname -f) >> /var/www/html/index.html
 EOF
 }
 module "vpc" {
@@ -103,6 +109,7 @@ module "ec2_cluster" {
   vpc_security_group_ids      = ["${module.security_group.security_group_id}"]
   associate_public_ip_address = true
   user_data_base64 = base64encode(local.user_data)
+  key_name = aws_key_pair.dytn.key_name
 }
 
 resource "aws_lb" "alb-lv1" {
@@ -117,4 +124,9 @@ resource "aws_lb" "alb-lv2" {
   load_balancer_type = "application"
   security_groups = ["${module.security_group_lvl2.security_group_id}"] 
   subnets = data.aws_subnet_ids.all.ids
+}
+
+resource "aws_key_pair" "dytn" {
+    key_name = "dytn-key"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDeskIzxuKiWySyiNRRFt22M9J++Ne4KaDAZL/a4PpaOTeNRJVitKq/raGwtwjEZU0CeP04DBXkN2rbffg8KDExNGm8BuXXwwbCKQ/xEnRzusY446Jg/FF88cs2OeknbSYADMb2vc0IzxQs9KEjdyAGXObJrxMRuopxRSdW/yGd8tlr48i7BMTNj/NKCxIoyucqRZxPPzFbEPzu2oXCmjDIef4f2ujxpuqxPZxAkztHNEmR184x91m9TZF5IDtjeHHPpXPQQKRJMx/X0Xbp98CvDi2jdDz3YV2rrbsOQricKVbTHqdmiEQuNTsnmN3JVsDT2zGNWzr4ImA5BCnhvGKAABAz71wylQcaHziZI6RojkkV/icAqn2ijzdiqxRJyQ8oRtFlN1hzSdEI4rAUn40nS8Le+6C/eky4I9OjriaihKYU8KSIkCm+byKDEiT9EAJlcZ7T+TQV57ljkw1NY9+9s89XV7t7zG82ofEnr3A4nxZk/U5frSqYO1Gl7TO3NYCHkpxUKHpGJFkTRkXooS8KrC1OvSOYtCzz0Hg2fOF/q968ncv90tMelZ8xy1TKsqWAZBASQx122m03Nc7rke17TLEG1dBUMxVVk6O1nQgAPKIZWDRmyHlDWesYet4MPfcT4DcCDxyDpLIdfRMkwuNcJYxF6EU5BnUB8JlnNumAnw== dytn@gft.com"
 }
