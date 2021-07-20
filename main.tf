@@ -1,3 +1,9 @@
+locals {
+  user_data = <<EOF
+#!/bin/bash
+sudo amazon-linux-extras install -y nginx1
+EOF
+}
 module "vpc" {
     source = "terraform-aws-modules/vpc/aws"
 
@@ -72,6 +78,7 @@ module "ec2_cluster" {
   subnet_id                   = each.value
   vpc_security_group_ids      = ["${module.security_group.security_group_id}"]
   associate_public_ip_address = true
+  user_data_base64 = base64encode(local.user_data)
 }
 
 # module "ec2_cluster" {
