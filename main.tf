@@ -63,6 +63,30 @@ module "security_group" {
   egress_rules        = ["all-all"]
 }
 
+module "security_group_lvl2"{
+  source = "terraform-aws-modules/security-group/aws"
+
+  name        = "sg_alb_lvl2"
+  description = "Security group for example usage with EC2 instance"
+  vpc_id      = "${data.aws_vpc.selected.id}"
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_rules       = ["https-443-tcp", "all-icmp"]
+  egress_rules        = ["all-all"]
+}
+
+module "security_group_lvl1"{
+  source = "terraform-aws-modules/security-group/aws"
+
+  name        = "sg_alb_lvl1"
+  description = "Security group for example usage with EC2 instance"
+  vpc_id      = "${data.aws_vpc.selected.id}"
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_rules       = ["http-80-tcp", "all-icmp"]
+  egress_rules        = ["all-all"]
+}
+
 # resource "aws_eip" "this" {
 #   vpc      = true
 #   instance = "${module.ec2.id[0]}"
@@ -81,21 +105,16 @@ module "ec2_cluster" {
   user_data_base64 = base64encode(local.user_data)
 }
 
-# module "ec2_cluster" {
-#   source = "terraform-aws-modules/ec2-instance/aws"
+resource "aws_lb" "alb-lv1" {
+  name = "lb-lvl1"
+  load_balancer_type = "application"
+  security_groups = ["${module.security_group_lvl1.security_group_id}"] 
+  subnets = data.aws_subnet_ids.all.ids
+}
 
-#   name           = "my-cluster"
-#   instance_count = 5
-  
-#   ami                    = "ami-ebd02392"
-#   instance_type          = "t2.micro"
-#   key_name               = "user1"
-#   monitoring             = true
-#   vpc_security_group_ids = ["sg-12345678"]
-#   subnet_id              = "subnet-eddcdzz4"
-
-#   tags = {
-#     Terraform = "true"
-#     Environment = "dev"
-#   }
-# }
+resource "aws_lb" "alb-lv2" {
+  name = "lb-lvl2"
+  load_balancer_type = "application"
+  security_groups = ["${module.security_group_lvl2.security_group_id}"] 
+  subnets = data.aws_subnet_ids.all.ids
+}
